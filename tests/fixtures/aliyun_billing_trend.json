@@ -1,0 +1,18 @@
+{
+  "requestId": "099A671E-FA21-5A36-8A73-918572DDEF53",
+  "code": "200",
+  "message": "null",
+  "success": true,
+  "data": {
+    "costTotals": { "amount": "100", "pretaxAmount": "94.34", "taxAmount": "5.66", "currency": "CNY" },
+    "groupByTotal": [
+      { "key": "qwen-plus", "name": "qwen-plus", "amount": "60", "pretaxAmount": "56.60", "taxAmount": "3.40" }
+    ],
+    "resultByTime": [
+      { "period": "20260801", "total": { "amount": "30", "pretaxAmount": "28.30", "taxAmount": "1.70", "currency": "CNY" },
+        "periodDetails": [ { "key": "qwen-plus", "name": "qwen-plus", "amount": "20", "pretaxAmount": "18.87", "taxAmount": "1.13", "percentage": "0.6667" } ] },
+      { "period": "20260802", "total": { "amount": "70", "pretaxAmount": "66.04", "taxAmount": "3.96", "currency": "CNY" },
+        "periodDetails": [ { "key": "qwen-plus", "name": "qwen-plus", "amount": "40", "pretaxAmount": "37.74", "taxAmount": "2.26", "percentage": "0.5714" } ] }
+    ]
+  }
+}

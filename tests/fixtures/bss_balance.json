@@ -1,0 +1,14 @@
+{
+  "Code": "200",
+  "Message": "success",
+  "RequestId": "16176743-6DC7-4CB3-BB25-A13982D8DFAD",
+  "Success": true,
+  "Data": {
+    "AvailableAmount": "10000.00",
+    "CreditAmount": "0.00",
+    "MybankCreditAmount": "0.00",
+    "Currency": "CNY",
+    "AvailableCashAmount": "9000.00",
+    "QuotaLimit": "10000.00"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "base_resp": { "status_code": 0, "status_msg": "success" },
+  "plan": { "name": "Build", "total_credits": 1000, "remaining_credits": 620 },
+  "current_window": { "remaining": 180, "total": 200, "reset_time": 1789999999000 },
+  "weekly_window": { "remaining": 900, "total": 1200 },
+  "credits_pack": { "remaining": 45, "expire_at": 1799999999000 }
+}

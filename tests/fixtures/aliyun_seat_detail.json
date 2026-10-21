@@ -1,0 +1,12 @@
+{
+  "Success": true,
+  "Data": {
+    "Items": [
+      { "InstanceCode": "subs-1234567",
+        "EquityList": [ { "EquityType": "CREDITS", "CycleInstanceId": "123456", "CycleStartTime": 1788328800000, "CycleEndTime": 1790920800000, "CycleTotalValue": 100, "CycleSurplusValue": 40, "CycleVersion": 1 } ],
+        "EndTime": 1790920800000, "SeatId": "seat_123456", "SpecType": "standard",
+        "StartTime": 1788328800000, "AssignedStatus": "ASSIGNED", "AccountId": "1234", "AccountName": "dev", "AccountEmail": "dev@example.com", "Status": "NORMAL" }
+    ],
+    "Total": 1, "PageNo": 1, "PageSize": 10
+  }
+}

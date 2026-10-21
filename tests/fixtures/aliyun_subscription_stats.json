@@ -1,0 +1,10 @@
+{
+  "Success": true,
+  "Data": {
+    "SubscriptionStartTime": 1788328800000,
+    "SubscriptionEndTime": 1790920800000,
+    "Items": [
+      { "SeatType": "standard", "SeatRefreshTime": 1790920800000, "TotalSeats": 2, "AssignedSeats": 1, "SeatCredits": 100, "SeatRemainingCredits": 40 }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+[project]
+name = "ai-usage-dashboard"
+version = "0.1.0"
+description = "HAOS 多平台 AI 额度 Dashboard（阿里云百炼 / MiniMax / DeepSeek）"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
+    "cryptography>=42",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]

@@ -1,0 +1,16 @@
+{
+  "requestId": "BB521414-5D38-5E66-AA66-963B2B4200E2",
+  "code": "200",
+  "message": "null",
+  "success": true,
+  "data": {
+    "currency": "USD",
+    "totalAmount": "31228.60",
+    "pretaxAmount": "28729.32",
+    "taxAmount": "2499.28",
+    "groups": [
+      { "key": "billing", "name": "账单费用", "articleCodes": ["sfm_inferenceglobal_public_intl"], "amount": "30000", "percentage": "0.96" },
+      { "key": "subscription", "name": "订阅购买费用", "articleCodes": ["sfm_tokenplan"], "amount": "1228.60", "percentage": "0.04" }
+    ]
+  }
+}
