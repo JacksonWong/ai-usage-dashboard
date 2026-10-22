@@ -194,7 +194,7 @@ def _parse_model_remains(
                 Metric(
                     key=f"{scope}_remaining:{model_name}",
                     label=f"{label} · {window}",
-                    value=ratio,
+                    value=round(ratio * 100, 2) if ratio is not None else None,
                     display=format_percent(ratio),
                     unit="percent",
                     total=total,

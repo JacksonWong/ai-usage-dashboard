@@ -20,6 +20,10 @@ from pytest_homeassistant_custom_component.common import (  # noqa: E402
 )
 
 from custom_components.llm_balance.const import DOMAIN  # noqa: E402
+from custom_components.llm_balance.core.snapshot import (  # noqa: E402
+    Metric,
+    Snapshot,
+)
 
 ACCOUNT = {
     "account_id": 1,
@@ -136,3 +140,74 @@ async def test_config_flow_rejects_missing_credentials(hass):
     )
     assert result["type"] == "form"
     assert result["errors"] == {"base": "missing_credentials"}
+
+
+async def _setup_with_snapshot(hass, snapshot: Snapshot) -> str:
+    """建立集成并用给定快照覆盖协调器数据，返回实体 id。"""
+    entry = MockConfigEntry(domain=DOMAIN, data=ACCOUNT, options=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator.data = snapshot
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    return registry.async_get_entity_id("sensor", DOMAIN, f"{DOMAIN}_1")
+
+
+async def test_sensor_state_is_numeric_when_unit_present(hass):
+    """有单位时状态必须是数值，否则 HA 会 float() 转换失败。"""
+    entity_id = await _setup_with_snapshot(
+        hass,
+        Snapshot(
+            account_id=1,
+            platform="aliyun",
+            mode="payg",
+            label="测试账号",
+            metrics=[
+                Metric(
+                    key="available_amount",
+                    label="账户可用额度",
+                    value=7.76,
+                    display="7.76 CNY",
+                    unit="CNY",
+                )
+            ],
+        ),
+    )
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert state.state == "7.76", "状态必须是纯数值"
+    assert float(state.state) == 7.76
+    assert state.attributes["unit_of_measurement"] == "CNY"
+    assert state.attributes["display"] == "7.76 CNY"
+    assert state.attributes["state_class"] == "measurement"
+
+
+async def test_sensor_state_is_text_when_no_numeric_value(hass):
+    """指标没有数值时状态退化为文本，且不带单位。"""
+    entity_id = await _setup_with_snapshot(
+        hass,
+        Snapshot(
+            account_id=1,
+            platform="aliyun",
+            mode="token_plan",
+            label="测试账号",
+            metrics=[
+                Metric(
+                    key="subscription_end",
+                    label="订阅到期",
+                    value=None,
+                    display="2026-11-19 14:00",
+                    unit="",
+                )
+            ],
+        ),
+    )
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert state.state == "2026-11-19 14:00"
+    assert state.attributes.get("unit_of_measurement") is None
