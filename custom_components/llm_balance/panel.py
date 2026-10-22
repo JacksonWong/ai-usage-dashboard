@@ -64,7 +64,9 @@ async def async_register_panel(hass: HomeAssistant) -> None:
 
             await async_register_panel(
                 hass,
-                frontend_url_path=f"/{PANEL_URL_PATH}",
+                # 前端按 /{url_path} 拼路由，这里不能带前导斜杠，
+                # 否则会变成 //llm_balance 被浏览器当成协议相对 URL。
+                frontend_url_path=PANEL_URL_PATH,
                 webcomponent_name="llm-balance-panel",
                 sidebar_title=PANEL_TITLE,
                 sidebar_icon=PANEL_ICON,

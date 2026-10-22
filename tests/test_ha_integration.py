@@ -66,7 +66,9 @@ async def test_setup_creates_sensor_and_panel(hass):
     assert state.attributes["mode"] == "payg"
 
     panels = hass.data.get("frontend_panels", {})
-    assert panels.get(f"/{DOMAIN}"), "侧边栏面板未注册"
+    # 前端按 /{url_path} 拼路由，这里不能带前导斜杠
+    assert panels.get(DOMAIN), "侧边栏面板未注册"
+    assert f"/{DOMAIN}" not in panels, "url_path 带前导斜杠会拼出 //llm_balance"
 
 
 async def test_dashboard_api(hass, hass_client):
@@ -234,7 +236,9 @@ async def test_multiple_entries_do_not_race_on_panel(hass, caplog):
 
     assert "Overwriting panel" not in caplog.text
     panels = hass.data.get("frontend_panels", {})
-    assert panels.get(f"/{DOMAIN}"), "侧边栏面板未注册"
+    # 前端按 /{url_path} 拼路由，这里不能带前导斜杠
+    assert panels.get(DOMAIN), "侧边栏面板未注册"
+    assert f"/{DOMAIN}" not in panels, "url_path 带前导斜杠会拼出 //llm_balance"
     for entry in entries:
         assert hass.states.get(
             er.async_get(hass).async_get_entity_id(
@@ -263,3 +267,31 @@ async def test_options_flow_can_be_opened(hass):
     assert entry.data["label"] == "改过的名字"
     # 选项流的 data 会整体替换 options，凭据不能被清空
     assert entry.options["credentials"]["access_key_id"] == "LTAI-fake"
+
+
+async def test_http_client_is_built_off_event_loop(hass, monkeypatch):
+    """构造 HTTP 客户端会同步加载 CA 证书，必须避开事件循环。"""
+    import threading
+
+    import httpx
+
+    built_in: list[str] = []
+    original = httpx.AsyncClient.__init__
+
+    def spy(self, *args, **kwargs):
+        built_in.append(threading.current_thread().name)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(httpx.AsyncClient, "__init__", spy)
+
+    entry = MockConfigEntry(domain=DOMAIN, data=ACCOUNT, options=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert built_in, "未创建 HTTP 客户端"
+    loop_thread = threading.current_thread().name
+    assert built_in[0] != loop_thread, (
+        f"HTTP 客户端在事件循环线程里创建了（{built_in[0]}），"
+        "会触发 load_verify_locations 阻塞告警"
+    )

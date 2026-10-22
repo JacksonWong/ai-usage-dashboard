@@ -24,14 +24,18 @@ class DashboardService:
         self._lock = asyncio.Lock()
         self.store = store
 
+    def _build_client(self) -> httpx.AsyncClient:
+        """构造 HTTP 客户端（会同步加载 CA 证书，需在线程中执行）。"""
+        timeout = load_settings().get("request_timeout_seconds", 20)
+        return httpx.AsyncClient(
+            timeout=httpx.Timeout(float(timeout), connect=10.0),
+            follow_redirects=False,
+            headers={"User-Agent": "ai-usage-dashboard/0.1"},
+        )
+
     async def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            timeout = load_settings().get("request_timeout_seconds", 20)
-            self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(float(timeout), connect=10.0),
-                follow_redirects=False,
-                headers={"User-Agent": "ai-usage-dashboard/0.1"},
-            )
+            self._client = await asyncio.to_thread(self._build_client)
         return self._client
 
     async def aclose(self) -> None:
