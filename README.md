@@ -196,3 +196,17 @@ export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...
 - 默认只监听 `127.0.0.1`
 - 外部请求域名走白名单，不接受用户自定义 URL
 - 前端全部走 JSON API + `textContent` 渲染，不做字符串拼接
+
+---
+
+## 六、变更记录
+
+每个版本的结论同时写在对应 commit 正文里；环境/运维层面的坑见 `DEVELOPMENT.md`。
+
+| 版本 | 关键结论 |
+|---|---|
+| v1.0.0 | 首个版本：三平台（百炼按量/订阅、MiniMax M Plan、DeepSeek）多账号看板；百炼走 AccessKey + ACS3-HMAC-SHA256 签名；百炼按量付费支持账期 + 维度（模型/API Key）筛选，账单费用环形图、账单趋势堆叠柱形图 |
+| v1.0.1 | 修复传感器：带单位时 `native_value` 必须是数值（HA 会强制 `float()`），格式化文案改放 `display` 属性；MiniMax 百分比指标改为 0~100 + `%` |
+| v1.0.2 | 修复多 config entry 并发 setup 重复注册面板（加锁）；OptionsFlow 适配 2025.1+（无参构造）；选项流 `data` 会整体替换 `entry.options`，必须回传完整内容否则清空凭据 |
+| v1.0.3 | 修复面板路由：`frontend_url_path` 不能带前导斜杠（否则拼出 `//llm_balance` 被当协议相对 URL）；`httpx.AsyncClient` 构造改到 executor 线程，消除 `load_verify_locations` 阻塞告警 |
+| v1.0.4 | 修复面板 `module_url` 缺 `/js` 导致 404（加文件存在性回归测试）；选项流移除维度/账期（属面板实时筛选项）；setup 先注册面板再取数、首次失败不阻塞；刷新改 `async_refresh` 立即执行；刷新间隔由全局设置下发协调器，HA 模式前端不再另起定时器；传感器名称实时跟随备注；卸载释放 HTTP 客户端 |
