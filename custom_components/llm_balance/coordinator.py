@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
 from typing import Any
 
 import httpx
@@ -11,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN, REFRESH_INTERVAL
+from .const import DOMAIN
 from .core.models import Account
 from .core.service import refresh_account
 from .core.snapshot import Snapshot
@@ -32,7 +31,8 @@ class LlmBalanceCoordinator(DataUpdateCoordinator[Snapshot]):
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{entry.entry_id}",
-            update_interval=timedelta(seconds=REFRESH_INTERVAL),
+            # 间隔由 async_setup_entry 按全局设置下发
+            update_interval=None,
         )
 
     @property
@@ -51,14 +51,14 @@ class LlmBalanceCoordinator(DataUpdateCoordinator[Snapshot]):
             updated_at=entry.modified_at,
         )
 
-    def _build_client(self) -> httpx.AsyncClient:
+    def _build_client(self, timeout: float) -> httpx.AsyncClient:
         """构造 HTTP 客户端。
 
         构造过程会同步加载 CA 证书，属于阻塞调用，必须放到线程里执行，
         否则会被 Home Assistant 的阻塞调用检测拦下。
         """
         return httpx.AsyncClient(
-            timeout=httpx.Timeout(20, connect=10.0),
+            timeout=httpx.Timeout(timeout, connect=10.0),
             follow_redirects=False,
             headers={"User-Agent": "ai-usage-dashboard/0.1"},
         )
@@ -66,7 +66,11 @@ class LlmBalanceCoordinator(DataUpdateCoordinator[Snapshot]):
     async def _async_get_client(self) -> httpx.AsyncClient:
         """按需创建 HTTP 客户端（在线程中构造）。"""
         if self._client is None:
-            self._client = await self.hass.async_add_executor_job(self._build_client)
+            settings = await async_get_settings(self.hass)
+            timeout = float(settings.get("request_timeout_seconds") or 20)
+            self._client = await self.hass.async_add_executor_job(
+                self._build_client, timeout
+            )
         return self._client
 
     async def _async_update_data(self) -> Snapshot | None:
@@ -83,8 +87,3 @@ class LlmBalanceCoordinator(DataUpdateCoordinator[Snapshot]):
         if self._client is not None:
             await self._client.aclose()
             self._client = None
-
-    async def async_force_refresh(self) -> Snapshot | None:
-        """忽略缓存强制抓取一次。"""
-        await self.async_request_refresh()
-        return self.data

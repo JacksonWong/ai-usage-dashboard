@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +17,14 @@ from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.http import KEY_HASS
 
-from .const import DOMAIN, PANEL_ICON, PANEL_TITLE, PANEL_URL_PATH, STATIC_URL
+from .const import (
+    DOMAIN,
+    PANEL_ICON,
+    PANEL_TITLE,
+    PANEL_URL_PATH,
+    REFRESH_INTERVAL,
+    STATIC_URL,
+)
 from .core.models import (
     PLATFORM_SPECS,
     missing_credentials,
@@ -24,7 +32,11 @@ from .core.models import (
     validate_options,
     validate_target,
 )
-from .settings import async_get_settings, async_save_settings
+from .settings import (
+    async_get_refresh_interval,
+    async_get_settings,
+    async_save_settings,
+)
 from .store import ConfigEntryAccountStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -56,9 +68,13 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     async with lock:
         if hass.data.get(_PANEL_REGISTERED):
             return
-        await hass.http.async_register_static_paths(
-            [StaticPathConfig(STATIC_URL, str(WWW_DIR), False)]
-        )
+        try:
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(STATIC_URL, str(WWW_DIR), False)]
+            )
+        except ValueError:
+            # 静态路径已注册（同一 HA 进程内重复 setup）
+            _LOGGER.debug("静态路径 %s 已注册，跳过", STATIC_URL)
         try:
             from homeassistant.components.panel_custom import async_register_panel
 
@@ -70,7 +86,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
                 webcomponent_name="llm-balance-panel",
                 sidebar_title=PANEL_TITLE,
                 sidebar_icon=PANEL_ICON,
-                module_url=f"{STATIC_URL}/panel.js",
+                module_url=f"{STATIC_URL}/js/panel.js",
                 require_admin=True,
             )
         except ValueError as err:
@@ -119,8 +135,13 @@ class LlmBalanceDashboardView(HomeAssistantView):
     async def get(self, request):
         hass = request.app[KEY_HASS]
         if request.query.get("refresh") == "1":
-            for coordinator in _coordinators(hass):
-                await coordinator.async_request_refresh()
+            await asyncio.gather(
+                *(
+                    coordinator.async_refresh()
+                    for coordinator in _coordinators(hass)
+                ),
+                return_exceptions=True,
+            )
         items = await _collect(hass)
         ok = sum(1 for item in items if item["status"] == "ok")
         last_update = max((item["fetched_at"] for item in items), default="")
@@ -238,7 +259,8 @@ class LlmBalanceAccountRefreshView(HomeAssistantView):
         account_id = int(account_id)
         for coordinator in _coordinators(hass):
             if coordinator.account and coordinator.account.id == account_id:
-                snapshot = await coordinator.async_force_refresh()
+                await coordinator.async_refresh()
+                snapshot = coordinator.data
                 return self.json(snapshot.to_dict() if snapshot else {})
         return self.json({"detail": "账号不存在"}, status_code=404)
 
@@ -271,7 +293,16 @@ class LlmBalanceSettingsView(HomeAssistantView):
                     {"detail": "账期月份格式应为 YYYY-MM"}, status_code=400
                 )
             body["bill_month"] = month
-        return self.json(await async_save_settings(hass, body))
+        saved = await async_save_settings(hass, body)
+        if "auto_refresh_seconds" in body:
+            from . import get_coordinators
+
+            interval = timedelta(
+                seconds=int(saved.get("auto_refresh_seconds") or REFRESH_INTERVAL)
+            )
+            for coordinator in get_coordinators(hass):
+                coordinator.update_interval = interval
+        return self.json(saved)
 
 
 VIEWS = [

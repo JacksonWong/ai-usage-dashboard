@@ -59,7 +59,15 @@ function haBackend(hass) {
     createAccount: (body) => call("POST", "llm_balance/accounts", body),
     updateAccount: (id, body) => call("PUT", `llm_balance/accounts/${id}`, body),
     deleteAccount: (id) => call("DELETE", `llm_balance/accounts/${id}`),
-    testAccount: (id) => call("POST", `llm_balance/accounts/${id}/refresh`),
+    testAccount: async (id) => {
+      const snapshot = await call("POST", `llm_balance/accounts/${id}/refresh`);
+      return {
+        ok: snapshot.status === "ok",
+        error: snapshot.error,
+        latency_ms: snapshot.latency_ms,
+        metrics: snapshot.metrics,
+      };
+    },
     refreshAccount: (id) => call("POST", `llm_balance/accounts/${id}/refresh`),
     settings: () => call("GET", "llm_balance/settings"),
     saveSettings: (body) => call("PUT", "llm_balance/settings", body),

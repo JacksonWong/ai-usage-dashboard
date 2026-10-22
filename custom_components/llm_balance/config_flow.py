@@ -204,46 +204,22 @@ class LlmBalanceOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         entry = self._entry
-        current = dict(entry.options.get("options") or {})
         if user_input is not None:
-            options = dict(entry.options)
-            merged = dict(options.get("options") or {})
-            for key in ("dimension", "bill_month"):
-                if user_input.get(key):
-                    merged[key] = user_input[key]
-            new_options = {**options, "options": merged}
             data = dict(entry.data)
             if user_input.get("label"):
                 data["label"] = user_input["label"]
+            # 选项流的 data 会整体替换 entry.options，必须回传完整内容，
+            # 否则凭据等字段会被清空。
+            new_options = dict(entry.options)
             self.hass.config_entries.async_update_entry(
                 entry, data=data, options=new_options
             )
-            # 选项流的 data 会整体替换 entry.options，必须回传完整内容，
-            # 否则凭据等字段会被清空。
             return self.async_create_entry(title="", data=new_options)
 
-        entry = self.config_entry
+        # 统计维度与账期是面板里的实时筛选项，不属于配置项
         schema: dict[Any, Any] = {
             vol.Required(
                 "label", default=entry.data.get("label", "")
             ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT))
         }
-        if entry.data.get("platform") == "aliyun" and entry.data.get("mode") == "payg":
-            schema[
-                vol.Optional(
-                    "dimension", default=current.get("dimension", "BASE_MODEL")
-                )
-            ] = SelectSelector(
-                SelectSelectorConfig(
-                    options=[
-                        SelectOptionDict(value="BASE_MODEL", label="模型"),
-                        SelectOptionDict(value="API_KEY_ID", label="API Key"),
-                    ],
-                    mode=SelectSelectorMode.DROPDOWN,
-                )
-            )
-            schema[
-                vol.Optional("bill_month", default=current.get("bill_month", ""))
-            ] = TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT))
-
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))

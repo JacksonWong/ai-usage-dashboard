@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "llm_balance"
 NAME = "大模型额度看板"
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 # 侧边栏面板
 PANEL_URL_PATH = DOMAIN

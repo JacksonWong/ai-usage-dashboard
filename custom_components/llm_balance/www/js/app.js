@@ -35,11 +35,18 @@ function setupAutoRefresh() {
     autoTimer = null;
   }
   const seconds = Number(settings.auto_refresh_seconds) || 0;
-  if (seconds > 0) {
+  // Home Assistant 模式下刷新由集成的协调器按全局设置驱动，
+  // 前端不再另起定时器，避免两边重复打官方接口。
+  const haMode = getBackend().mode === "ha";
+  if (!haMode && seconds > 0) {
     autoTimer = setInterval(() => loadDashboard(true), seconds * 1000);
   }
   const toggle = el("auto-refresh");
-  if (toggle) toggle.checked = seconds > 0;
+  if (toggle) {
+    const switchBox = toggle.closest(".switch");
+    if (switchBox) switchBox.hidden = haMode;
+    toggle.checked = !haMode && seconds > 0;
+  }
 }
 
 async function refreshAll(force = true) {

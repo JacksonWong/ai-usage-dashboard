@@ -50,10 +50,14 @@ class LlmBalanceSensor(CoordinatorEntity[LlmBalanceCoordinator], SensorEntity):
         self, coordinator: LlmBalanceCoordinator, entry: ConfigEntry
     ) -> None:
         super().__init__(coordinator)
-        self._entry = entry
         self._attr_unique_id = f"{DOMAIN}_{entry.data.get('account_id', entry.entry_id)}"
-        self._attr_name = entry.data.get("label") or entry.data.get("platform")
         self._attr_icon = "mdi:chart-donut"
+
+    @property
+    def name(self) -> str:
+        """备注在面板里改过后，实体名随之更新，无需重载配置项。"""
+        data = self.coordinator.entry.data
+        return str(data.get("label") or data.get("platform") or DOMAIN)
 
     @property
     def available(self) -> bool:

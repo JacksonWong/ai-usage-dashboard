@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 from .const import DOMAIN
@@ -23,20 +24,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     from .coordinator import LlmBalanceCoordinator
     from .panel import async_register_panel, async_register_views
+    from .settings import async_get_refresh_interval
 
     # 面板与 API 依赖 HTTP 组件；完整 HAOS 里它总是已加载，
     # 这里兜底保证在最小化安装（容器 / Core）下也能用。
     if hass.http is None:
         await async_setup_component(hass, "http", {})
 
+    # 先注册视图与面板：即使首次取数失败，侧边栏入口也应当可用。
     await async_register_views(hass)
+    await async_register_panel(hass)
+
     coordinator = LlmBalanceCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
+    coordinator.update_interval = timedelta(
+        seconds=await async_get_refresh_interval(hass)
+    )
+    # 不用 async_config_entry_first_refresh：网络抖动不应让整条配置项
+    # 进入重试状态，传感器会以不可用态呈现，面板里能看到具体错误。
+    await coordinator.async_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    await async_register_panel(hass)
+    entry.async_on_unload(coordinator.async_shutdown)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
@@ -46,11 +55,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     return unloaded
-
-
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """配置项变更后重载。"""
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 def get_coordinators(hass: HomeAssistant) -> list[Any]:

@@ -259,11 +259,10 @@ async def test_options_flow_can_be_opened(hass):
     assert result["step_id"] == "init"
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"label": "改过的名字", "dimension": "API_KEY_ID"}
+        result["flow_id"], {"label": "改过的名字"}
     )
     assert result["type"] == "create_entry"
     await hass.async_block_till_done()
-    assert entry.options["options"]["dimension"] == "API_KEY_ID"
     assert entry.data["label"] == "改过的名字"
     # 选项流的 data 会整体替换 options，凭据不能被清空
     assert entry.options["credentials"]["access_key_id"] == "LTAI-fake"
@@ -295,3 +294,20 @@ async def test_http_client_is_built_off_event_loop(hass, monkeypatch):
         f"HTTP 客户端在事件循环线程里创建了（{built_in[0]}），"
         "会触发 load_verify_locations 阻塞告警"
     )
+
+
+async def test_panel_module_url_points_at_real_file(hass):
+    """面板 module_url 必须指向真实存在的文件（回归：曾漏掉 /js 导致 404）。"""
+    from custom_components.llm_balance.const import STATIC_URL
+    from custom_components.llm_balance.panel import WWW_DIR
+
+    entry = MockConfigEntry(domain=DOMAIN, data=ACCOUNT, options=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    panel = hass.data["frontend_panels"][DOMAIN]
+    module_url = panel.config["_panel_custom"]["module_url"]
+    assert module_url.startswith(STATIC_URL)
+    relative = module_url[len(STATIC_URL):].lstrip("/")
+    assert (WWW_DIR / relative).is_file(), f"静态文件不存在：{relative}"
