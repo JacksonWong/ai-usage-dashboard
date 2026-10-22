@@ -10,6 +10,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry, ConfigFlow
+from homeassistant.core import callback
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
@@ -180,15 +181,29 @@ class LlmBalanceConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
+    @callback
     def async_get_options_flow(config_entry: ConfigEntry):
-        return LlmBalanceOptionsFlow(config_entry)
+        # 2025.1+ 由框架把 config entry 关联到 flow（self.handler），
+        # 不要再往构造函数传参（2025.12 起手动设置 config_entry 会报错）。
+        return LlmBalanceOptionsFlow()
 
 
 class LlmBalanceOptionsFlow(config_entries.OptionsFlow):
     """编辑已有账号的备注与筛选条件。"""
 
+    @property
+    def _entry(self) -> ConfigEntry:
+        """取当前配置项：优先用基类提供的，2024.10 则按 handler 查。"""
+        try:
+            entry = self.config_entry
+        except (AttributeError, ValueError):
+            entry = None
+        if entry is not None:
+            return entry
+        return self.hass.config_entries.async_get_known_entry(self.handler)
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        entry = self.config_entry
+        entry = self._entry
         current = dict(entry.options.get("options") or {})
         if user_input is not None:
             options = dict(entry.options)
@@ -196,13 +211,16 @@ class LlmBalanceOptionsFlow(config_entries.OptionsFlow):
             for key in ("dimension", "bill_month"):
                 if user_input.get(key):
                     merged[key] = user_input[key]
+            new_options = {**options, "options": merged}
             data = dict(entry.data)
             if user_input.get("label"):
                 data["label"] = user_input["label"]
             self.hass.config_entries.async_update_entry(
-                entry, data=data, options={**options, "options": merged}
+                entry, data=data, options=new_options
             )
-            return self.async_create_entry(title="", data={})
+            # 选项流的 data 会整体替换 entry.options，必须回传完整内容，
+            # 否则凭据等字段会被清空。
+            return self.async_create_entry(title="", data=new_options)
 
         entry = self.config_entry
         schema: dict[Any, Any] = {

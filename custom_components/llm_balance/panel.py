@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -31,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 WWW_DIR = Path(__file__).parent / "www"
 
 _PANEL_REGISTERED = f"{DOMAIN}_panel_registered"
+_PANEL_LOCK = f"{DOMAIN}_panel_lock"
 
 
 def _store(hass: HomeAssistant) -> ConfigEntryAccountStore:
@@ -44,27 +46,38 @@ def _coordinators(hass: HomeAssistant):
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
-    """注册静态资源与侧边栏面板（重复调用安全）。"""
+    """注册静态资源与侧边栏面板。
+
+    多个 config entry 会并发 setup，这里用锁保证静态路径与面板只注册一次。
+    """
     if hass.data.get(_PANEL_REGISTERED):
         return
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(STATIC_URL, str(WWW_DIR), False)]
-    )
-    try:
-        from homeassistant.components.panel_custom import async_register_panel
-
-        await async_register_panel(
-            hass,
-            frontend_url_path=f"/{PANEL_URL_PATH}",
-            webcomponent_name="llm-balance-panel",
-            sidebar_title=PANEL_TITLE,
-            sidebar_icon=PANEL_ICON,
-            module_url=f"{STATIC_URL}/panel.js",
-            require_admin=True,
+    lock: asyncio.Lock = hass.data.setdefault(_PANEL_LOCK, asyncio.Lock())
+    async with lock:
+        if hass.data.get(_PANEL_REGISTERED):
+            return
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(STATIC_URL, str(WWW_DIR), False)]
         )
-    except Exception:  # noqa: BLE001 - 面板注册失败不应影响集成本身
-        _LOGGER.exception("注册侧边栏面板失败")
-    hass.data[_PANEL_REGISTERED] = True
+        try:
+            from homeassistant.components.panel_custom import async_register_panel
+
+            await async_register_panel(
+                hass,
+                frontend_url_path=f"/{PANEL_URL_PATH}",
+                webcomponent_name="llm-balance-panel",
+                sidebar_title=PANEL_TITLE,
+                sidebar_icon=PANEL_ICON,
+                module_url=f"{STATIC_URL}/panel.js",
+                require_admin=True,
+            )
+        except ValueError as err:
+            # 面板已存在（并发或重复注册）不算错误
+            if "Overwriting panel" not in str(err):
+                _LOGGER.exception("注册侧边栏面板失败")
+        except Exception:  # noqa: BLE001 - 面板注册失败不应影响集成本身
+            _LOGGER.exception("注册侧边栏面板失败")
+        hass.data[_PANEL_REGISTERED] = True
 
 
 async def _collect(hass: HomeAssistant) -> list[dict[str, Any]]:

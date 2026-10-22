@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 pytest.importorskip(
@@ -211,3 +213,53 @@ async def test_sensor_state_is_text_when_no_numeric_value(hass):
     assert state is not None
     assert state.state == "2026-11-19 14:00"
     assert state.attributes.get("unit_of_measurement") is None
+
+
+async def test_multiple_entries_do_not_race_on_panel(hass, caplog):
+    """多个账号并发 setup 时，侧边栏面板只能注册一次。"""
+    entries = []
+    for index in range(3):
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={**ACCOUNT, "account_id": index + 1, "label": f"账号{index + 1}"},
+            options=OPTIONS,
+        )
+        entry.add_to_hass(hass)
+        entries.append(entry)
+
+    await asyncio.gather(
+        *(hass.config_entries.async_setup(entry.entry_id) for entry in entries)
+    )
+    await hass.async_block_till_done()
+
+    assert "Overwriting panel" not in caplog.text
+    panels = hass.data.get("frontend_panels", {})
+    assert panels.get(f"/{DOMAIN}"), "侧边栏面板未注册"
+    for entry in entries:
+        assert hass.states.get(
+            er.async_get(hass).async_get_entity_id(
+                "sensor", DOMAIN, f"{DOMAIN}_{entry.data['account_id']}"
+            )
+        )
+
+
+async def test_options_flow_can_be_opened(hass):
+    """配置项的选项流应能正常打开（2025.1+ 不再向构造函数传参）。"""
+    entry = MockConfigEntry(domain=DOMAIN, data=ACCOUNT, options=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "form"
+    assert result["step_id"] == "init"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"label": "改过的名字", "dimension": "API_KEY_ID"}
+    )
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    assert entry.options["options"]["dimension"] == "API_KEY_ID"
+    assert entry.data["label"] == "改过的名字"
+    # 选项流的 data 会整体替换 options，凭据不能被清空
+    assert entry.options["credentials"]["access_key_id"] == "LTAI-fake"
