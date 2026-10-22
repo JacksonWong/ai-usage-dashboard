@@ -125,8 +125,8 @@ def test_dashboard_returns_summary(client):
 
 def test_dashboard_sums_spend_from_successful_account(client, monkeypatch):
     """成功返回的账号必须能正常聚合（曾因 dict/属性混用导致 500）。"""
-    from app.providers.aliyun import AliyunProvider
-    from app.snapshot import BreakdownItem, Metric, SeriesPoint, Snapshot
+    from custom_components.llm_balance.core.providers.aliyun import AliyunProvider
+    from custom_components.llm_balance.core.snapshot import BreakdownItem, Metric, SeriesPoint, Snapshot
 
     async def fake_fetch(self, client, account, settings):
         return Snapshot(

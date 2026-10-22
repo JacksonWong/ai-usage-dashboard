@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from app.signing import (
+from custom_components.llm_balance.core.signing import (
     canonical_headers,
     canonical_query_string,
     percent_encode,

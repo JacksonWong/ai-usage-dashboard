@@ -1,0 +1,57 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Select a platform",
+        "description": "Choose the AI platform to connect.",
+        "data": {
+          "platform": "Platform"
+        }
+      },
+      "mode": {
+        "title": "Select account type",
+        "description": "Choose the billing mode of this account.",
+        "data": {
+          "mode": "Account type"
+        }
+      },
+      "credentials": {
+        "title": "Enter credentials",
+        "description": "Enter the access credentials for this platform. Alibaba Cloud Model Studio requires an AccessKey ID and Secret (the billing and Token Plan APIs use ACS3-HMAC-SHA256 signatures and do not accept sk- API keys).",
+        "data": {
+          "label": "Label",
+          "access_key_id": "AccessKey ID",
+          "access_key_secret": "AccessKey Secret",
+          "security_token": "STS SecurityToken (optional)",
+          "region_id": "Region ID",
+          "api_key": "API Key"
+        }
+      }
+    },
+    "error": {
+      "missing_credentials": "Required credentials are missing."
+    },
+    "abort": {
+      "already_configured": "This account is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Account options",
+        "data": {
+          "label": "Label",
+          "dimension": "Dimension",
+          "bill_month": "Bill month (YYYY-MM)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "llm_balance": {
+        "name": "LLM balance"
+      }
+    }
+  }
+}

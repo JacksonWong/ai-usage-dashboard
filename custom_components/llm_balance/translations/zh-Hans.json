@@ -1,0 +1,57 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "选择平台",
+        "description": "选择要接入的 AI 平台。",
+        "data": {
+          "platform": "平台"
+        }
+      },
+      "mode": {
+        "title": "选择账号类型",
+        "description": "选择该账号的计费模式。",
+        "data": {
+          "mode": "账号类型"
+        }
+      },
+      "credentials": {
+        "title": "填写访问凭据",
+        "description": "填写该平台的访问凭据。阿里云百炼需要 AccessKey ID 与 AccessKey Secret（账单与 Token Plan 接口使用 ACS3-HMAC-SHA256 签名，不支持 sk- 形式的 API Key）。",
+        "data": {
+          "label": "备注名称",
+          "access_key_id": "AccessKey ID",
+          "access_key_secret": "AccessKey Secret",
+          "security_token": "STS SecurityToken（可选）",
+          "region_id": "地域 ID",
+          "api_key": "API Key"
+        }
+      }
+    },
+    "error": {
+      "missing_credentials": "缺少必填的访问凭据。"
+    },
+    "abort": {
+      "already_configured": "该账号已存在。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "账号选项",
+        "data": {
+          "label": "备注名称",
+          "dimension": "统计维度",
+          "bill_month": "账期（YYYY-MM）"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "llm_balance": {
+        "name": "大模型额度"
+      }
+    }
+  }
+}

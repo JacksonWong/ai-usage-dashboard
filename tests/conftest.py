@@ -15,7 +15,7 @@ os.environ["AIDASH_KEY_PATH"] = str(_TMP / "key")
 def client():
     from fastapi.testclient import TestClient
 
-    from app.main import app
+    from standalone.main import app
 
     with TestClient(app) as test_client:
         yield test_client
@@ -23,11 +23,11 @@ def client():
 
 @pytest.fixture(autouse=True)
 def clean_db():
-    from app.db import init_db
+    from standalone.db import init_db
 
     init_db()
     yield
-    from app.db import _connect
+    from standalone.db import _connect
 
     conn = _connect()
     try:

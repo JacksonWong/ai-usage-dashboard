@@ -22,4 +22,4 @@ echo "==> 安装依赖"
   fastapi "uvicorn[standard]" httpx cryptography pytest pytest-asyncio
 
 echo "==> 启动 http://${HOST}:${PORT}"
-exec .venv/bin/python -m uvicorn app.main:app --host "$HOST" --port "$PORT" "$@"
+exec .venv/bin/python -m uvicorn standalone.main:app --host "$HOST" --port "$PORT" "$@"

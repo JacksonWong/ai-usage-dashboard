@@ -7,10 +7,10 @@ from typing import Any
 import httpx
 import pytest
 
-from app.db import Account
-from app.providers.aliyun import AliyunProvider
-from app.providers.deepseek import DeepseekProvider
-from app.providers.minimax import MinimaxProvider
+from custom_components.llm_balance.core.models import Account
+from custom_components.llm_balance.core.providers.aliyun import AliyunProvider
+from custom_components.llm_balance.core.providers.deepseek import DeepseekProvider
+from custom_components.llm_balance.core.providers.minimax import MinimaxProvider
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

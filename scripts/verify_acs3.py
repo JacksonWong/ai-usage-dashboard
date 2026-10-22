@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import httpx  # noqa: E402
 
-from app.signing import sign_request  # noqa: E402
+from custom_components.llm_balance.core.signing import sign_request  # noqa: E402
 
 CASES = [
     {
