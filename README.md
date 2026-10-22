@@ -126,6 +126,14 @@ PORT=9000 ./run.sh
 .venv/bin/python -m pytest -q
 ```
 
+其中 HA 集成运行时测试（配置流、传感器、面板注册、面板 API）需要额外依赖，
+未安装时自动跳过：
+
+```bash
+uv pip install pytest-homeassistant-custom-component==0.13.199
+.venv/bin/python -m pytest tests/test_ha_integration.py -q
+```
+
 ### 独立部署 vs HAOS 的差异
 
 | | 独立部署 | Home Assistant |

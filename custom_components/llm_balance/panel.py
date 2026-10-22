@@ -13,7 +13,7 @@ from typing import Any
 
 from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.http import KEY_HASS
 
 from .const import DOMAIN, PANEL_ICON, PANEL_TITLE, PANEL_URL_PATH, STATIC_URL
 from .core.models import (
@@ -102,7 +102,7 @@ class LlmBalanceDashboardView(HomeAssistantView):
     requires_auth = True
 
     async def get(self, request):
-        hass = request.app["hass"]
+        hass = request.app[KEY_HASS]
         if request.query.get("refresh") == "1":
             for coordinator in _coordinators(hass):
                 await coordinator.async_request_refresh()
@@ -128,12 +128,12 @@ class LlmBalanceAccountsView(HomeAssistantView):
     requires_auth = True
 
     async def get(self, request):
-        hass = request.app["hass"]
+        hass = request.app[KEY_HASS]
         accounts = await _store(hass).list_accounts()
         return self.json({"items": [account.to_public() for account in accounts]})
 
     async def post(self, request):
-        hass = request.app["hass"]
+        hass = request.app[KEY_HASS]
         body = await request.json()
         platform = body.get("platform")
         mode = body.get("mode")
@@ -169,9 +169,9 @@ class LlmBalanceAccountView(HomeAssistantView):
     name = f"api:{DOMAIN}:account"
     requires_auth = True
 
-    async def put(self, request):
-        hass = request.app["hass"]
-        account_id = int(request.path.split("/")[-1])
+    async def put(self, request, account_id: str):
+        hass = request.app[KEY_HASS]
+        account_id = int(account_id)
         body = await request.json()
         store = _store(hass)
         account = await store.get_account(account_id)
@@ -205,9 +205,9 @@ class LlmBalanceAccountView(HomeAssistantView):
         )
         return self.json(updated.to_public() if updated else {})
 
-    async def delete(self, request):
-        hass = request.app["hass"]
-        account_id = int(request.path.split("/")[-1])
+    async def delete(self, request, account_id: str):
+        hass = request.app[KEY_HASS]
+        account_id = int(account_id)
         if not await _store(hass).delete_account(account_id):
             return self.json({"detail": "账号不存在"}, status_code=404)
         return self.json({"deleted": account_id})
@@ -218,9 +218,9 @@ class LlmBalanceAccountRefreshView(HomeAssistantView):
     name = f"api:{DOMAIN}:account_refresh"
     requires_auth = True
 
-    async def post(self, request):
-        hass = request.app["hass"]
-        account_id = int(request.path.split("/")[-2])
+    async def post(self, request, account_id: str):
+        hass = request.app[KEY_HASS]
+        account_id = int(account_id)
         for coordinator in _coordinators(hass):
             if coordinator.account and coordinator.account.id == account_id:
                 snapshot = await coordinator.async_force_refresh()
@@ -234,11 +234,11 @@ class LlmBalanceSettingsView(HomeAssistantView):
     requires_auth = True
 
     async def get(self, request):
-        hass = request.app["hass"]
+        hass = request.app[KEY_HASS]
         return self.json(await async_get_settings(hass))
 
     async def put(self, request):
-        hass = request.app["hass"]
+        hass = request.app[KEY_HASS]
         body = await request.json()
         if "locale" in body and body["locale"] not in ("zh-CN", "en-US"):
             return self.json({"detail": "locale 仅支持 zh-CN 或 en-US"}, status_code=400)

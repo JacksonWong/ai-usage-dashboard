@@ -19,8 +19,15 @@ PLATFORMS = ["sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """建立单个账号的协调器。"""
+    from homeassistant.setup import async_setup_component
+
     from .coordinator import LlmBalanceCoordinator
     from .panel import async_register_panel, async_register_views
+
+    # 面板与 API 依赖 HTTP 组件；完整 HAOS 里它总是已加载，
+    # 这里兜底保证在最小化安装（容器 / Core）下也能用。
+    if hass.http is None:
+        await async_setup_component(hass, "http", {})
 
     await async_register_views(hass)
     coordinator = LlmBalanceCoordinator(hass, entry)
