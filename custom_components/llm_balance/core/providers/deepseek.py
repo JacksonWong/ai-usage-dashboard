@@ -44,7 +44,7 @@ class DeepseekProvider(Provider):
         available = payload.get("is_available")
         if available is False:
             snapshot = self._error(account, started, "账户余额不可用（is_available = false）")
-            snapshot.raw = payload
+            snapshot.raw = {"user_balance": payload}
             return snapshot
 
         snapshot = Snapshot(
@@ -58,7 +58,7 @@ class DeepseekProvider(Provider):
         balances = payload.get("balance_infos")
         if not isinstance(balances, list) or not balances:
             snapshot = self._error(account, started, "响应中缺少 balance_infos")
-            snapshot.raw = payload
+            snapshot.raw = {"user_balance": payload}
             return snapshot
 
         for info in balances:
@@ -102,7 +102,7 @@ class DeepseekProvider(Provider):
                     )
                 )
 
-        snapshot.raw = payload
+        snapshot.raw = {"user_balance": payload}
 
         await self._fetch_models(client, snapshot, headers)
 
@@ -121,6 +121,8 @@ class DeepseekProvider(Provider):
         except ApiError as exc:
             snapshot.notes.append(f"模型列表获取失败：{exc}")
             return
+
+        snapshot.raw["models"] = payload
 
         data = payload.get("data")
         if not isinstance(data, list):

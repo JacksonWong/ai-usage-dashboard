@@ -211,3 +211,4 @@ export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...
 | v1.0.3 | 修复面板路由：`frontend_url_path` 不能带前导斜杠（否则拼出 `//llm_balance` 被当协议相对 URL）；`httpx.AsyncClient` 构造改到 executor 线程，消除 `load_verify_locations` 阻塞告警 |
 | v1.0.4 | 修复面板 `module_url` 缺 `/js` 导致 404（加文件存在性回归测试）；选项流移除维度/账期（属面板实时筛选项）；setup 先注册面板再取数、首次失败不阻塞；刷新改 `async_refresh` 立即执行；刷新间隔由全局设置下发协调器，HA 模式前端不再另起定时器；传感器名称实时跟随备注；卸载释放 HTTP 客户端 |
 | v1.0.5 | DeepSeek 看板优化：移除「余额构成」条形图（与指标卡重复、信息量低）；接入官方 `GET /models` 展示「当前可用的模型」（模型名/id/上下文/输出上限/模态），模型接口失败仅记 note 不影响余额快照 |
+| v1.0.6 | DeepSeek「原始响应」补全：`raw` 改为按接口分组（`user_balance` / `models`），模型列表的完整 JSON 一并展示，便于排查 |

@@ -311,6 +311,8 @@ async def test_deepseek_balance():
     assert snapshot.models[0].max_output_tokens == 8192
     assert snapshot.models[0].input_modalities == ["text"]
     assert snapshot.notes == []
+    assert set(snapshot.raw) == {"user_balance", "models"}
+    assert snapshot.raw["models"]["object"] == "list"
 
 
 async def test_deepseek_models_failure_degrades():
