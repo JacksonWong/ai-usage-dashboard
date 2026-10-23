@@ -289,6 +289,8 @@ async def test_minimax_unknown_shape_still_returns_raw():
 async def test_deepseek_balance():
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["authorization"] == "Bearer sk-ds"
+        if request.url.path == "/models":
+            return httpx.Response(200, json=load("deepseek_models.json"))
         return httpx.Response(200, json=load("deepseek_balance.json"))
 
     provider = DeepseekProvider()
@@ -302,7 +304,30 @@ async def test_deepseek_balance():
     assert keys["total_balance"].display == "110.00 CNY"
     assert keys["granted_balance"].value == 10.00
     assert keys["topped_up_balance"].value == 100.00
-    assert len(snapshot.breakdown) == 2
+    assert snapshot.breakdown == []
+    assert [model.id for model in snapshot.models] == ["deepseek-chat", "deepseek-reasoner"]
+    assert snapshot.models[0].name == "DeepSeek-V3.2-Exp"
+    assert snapshot.models[0].context_window == 131072
+    assert snapshot.models[0].max_output_tokens == 8192
+    assert snapshot.models[0].input_modalities == ["text"]
+    assert snapshot.notes == []
+
+
+async def test_deepseek_models_failure_degrades():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/models":
+            return httpx.Response(500, json={"error": {"message": "boom"}})
+        return httpx.Response(200, json=load("deepseek_balance.json"))
+
+    provider = DeepseekProvider()
+    acct = account("deepseek", "payg", api_key="sk-ds")
+    async with client_with(handler) as client:
+        snapshot = await provider.fetch(client, acct, {})
+
+    assert snapshot.status == "ok"
+    assert {metric.key for metric in snapshot.metrics} >= {"total_balance"}
+    assert snapshot.models == []
+    assert any("模型列表获取失败" in note for note in snapshot.notes)
 
 
 async def test_deepseek_unavailable_account():

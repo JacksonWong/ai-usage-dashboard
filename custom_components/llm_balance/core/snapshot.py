@@ -34,6 +34,21 @@ class BreakdownItem:
 
 
 @dataclass
+class ModelItem:
+    """平台当前可用的模型及关键元数据。"""
+
+    id: str
+    name: str = ""
+    context_window: int | None = None
+    max_output_tokens: int | None = None
+    input_modalities: list[str] = field(default_factory=list)
+    output_modalities: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class SeriesPoint:
     label: str
     value: float = 0.0
@@ -127,6 +142,7 @@ class Snapshot:
     metrics: list[Metric] = field(default_factory=list)
     breakdown: list[BreakdownItem] = field(default_factory=list)
     series: list[SeriesPoint] = field(default_factory=list)
+    models: list[ModelItem] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)
     donut: Donut | None = None
@@ -146,6 +162,7 @@ class Snapshot:
             "metrics": [m.to_dict() for m in self.metrics],
             "breakdown": [b.to_dict() for b in self.breakdown],
             "series": [s.to_dict() for s in self.series],
+            "models": [m.to_dict() for m in self.models],
             "notes": self.notes,
             "raw": self.raw,
             "donut": self.donut.to_dict() if self.donut else None,

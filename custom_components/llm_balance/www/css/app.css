@@ -491,6 +491,27 @@ main {
 .row__fill { height: 100%; background: var(--accent); opacity: 0.75; border-radius: 999px; transition: width 0.5s ease; }
 .row__hint { grid-column: 1 / -1; font-size: 10.5px; color: var(--text-faint); }
 
+/* 模型列表 */
+.models { display: flex; flex-direction: column; gap: 6px; }
+.model {
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+.model__head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.model__name { font-size: 12.5px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.model__id {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  flex: none;
+}
+.model__meta { margin-top: 3px; font-size: 10.5px; color: var(--text-faint); }
+
 /* 趋势 */
 .chart { width: 100%; height: 68px; display: block; overflow: visible; }
 .chart__axis { font-size: 9px; fill: var(--text-faint); }

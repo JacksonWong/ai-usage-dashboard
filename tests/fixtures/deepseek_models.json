@@ -1,0 +1,25 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "deepseek-chat",
+      "object": "model",
+      "owned_by": "deepseek",
+      "name": "DeepSeek-V3.2-Exp",
+      "context_window": 131072,
+      "max_output_tokens": 8192,
+      "input_modalities": ["text"],
+      "output_modalities": ["text"]
+    },
+    {
+      "id": "deepseek-reasoner",
+      "object": "model",
+      "owned_by": "deepseek",
+      "name": "DeepSeek-R1",
+      "context_window": 65536,
+      "max_output_tokens": 8192,
+      "input_modalities": ["text"],
+      "output_modalities": ["text"]
+    }
+  ]
+}

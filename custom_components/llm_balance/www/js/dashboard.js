@@ -98,6 +98,41 @@ function breakdownNode(items) {
   return section;
 }
 
+function formatTokens(value) {
+  if (value >= 1048576) return `${Math.round((value / 1048576) * 10) / 10}M`;
+  if (value >= 1024) return `${Math.round(value / 1024)}K`;
+  return String(value);
+}
+
+function modelsNode(models) {
+  const section = text("div", "section");
+  section.appendChild(text("div", "section__title", "当前可用的模型"));
+  const list = text("div", "models");
+
+  for (const model of models || []) {
+    const item = text("div", "model");
+
+    const head = text("div", "model__head");
+    head.appendChild(text("span", "model__name", model.name || model.id));
+    if (model.id && model.id !== model.name) {
+      head.appendChild(text("code", "model__id", model.id));
+    }
+    item.appendChild(head);
+
+    const meta = [];
+    if (model.context_window) meta.push(`上下文 ${formatTokens(model.context_window)}`);
+    if (model.max_output_tokens) meta.push(`输出上限 ${formatTokens(model.max_output_tokens)}`);
+    if (model.input_modalities?.length) meta.push(`输入 ${model.input_modalities.join("/")}`);
+    if (model.output_modalities?.length) meta.push(`输出 ${model.output_modalities.join("/")}`);
+    if (meta.length) item.appendChild(text("div", "model__meta", meta.join(" · ")));
+
+    list.appendChild(item);
+  }
+
+  section.appendChild(list);
+  return section;
+}
+
 async function applyFilter(accountId, options) {
   try {
     await getBackend().updateAccount(accountId, { options });
@@ -300,6 +335,8 @@ function accountCard(snapshot, platform, modeLabel) {
   if (snapshot.stacked) card.appendChild(stackedSection(snapshot.stacked, fits));
 
   if (snapshot.breakdown?.length) card.appendChild(breakdownNode(snapshot.breakdown));
+
+  if (snapshot.models?.length) card.appendChild(modelsNode(snapshot.models));
 
   if (snapshot.series?.length > 1) {
     const section = text("div", "section");

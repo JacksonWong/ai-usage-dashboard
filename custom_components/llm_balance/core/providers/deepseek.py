@@ -8,10 +8,11 @@ import httpx
 from ..models import Account
 from ..format import format_money, now_iso, to_float
 from ..http_client import ApiError, request_json
-from ..snapshot import BreakdownItem, Metric, Snapshot
+from ..snapshot import Metric, ModelItem, Snapshot
 from .base import Provider
 
 BALANCE_URL = "https://api.deepseek.com/user/balance"
+MODELS_URL = "https://api.deepseek.com/models"
 
 
 class DeepseekProvider(Provider):
@@ -28,12 +29,14 @@ class DeepseekProvider(Provider):
         if not api_key:
             return self._error(account, started, "未配置 API Key")
 
+        headers = {"Authorization": f"Bearer {api_key}"}
+
         try:
             payload = await request_json(
                 client,
                 "GET",
                 BALANCE_URL,
-                headers={"Authorization": f"Bearer {api_key}"},
+                headers=headers,
             )
         except ApiError as exc:
             return self._error(account, started, str(exc))
@@ -98,27 +101,46 @@ class DeepseekProvider(Provider):
                         unit=currency,
                     )
                 )
-            if granted is not None or topped_up is not None:
-                parts = []
-                if granted is not None:
-                    parts.append(("赠金", granted))
-                if topped_up is not None:
-                    parts.append(("充值", topped_up))
-                combined = sum(value for _, value in parts)
-                for name, value in parts:
-                    snapshot.breakdown.append(
-                        BreakdownItem(
-                            name=name,
-                            value=value,
-                            display=format_money(value, currency),
-                            percentage=(value / combined) if combined else None,
-                            dimension="余额构成",
-                        )
-                    )
 
         snapshot.raw = payload
+
+        await self._fetch_models(client, snapshot, headers)
+
         snapshot.latency_ms = int((datetime.now() - started).total_seconds() * 1000)
         return snapshot
+
+    async def _fetch_models(
+        self,
+        client: httpx.AsyncClient,
+        snapshot: Snapshot,
+        headers: dict[str, str],
+    ) -> None:
+        """拉取可用模型列表；失败只记 note，不影响余额快照。"""
+        try:
+            payload = await request_json(client, "GET", MODELS_URL, headers=headers)
+        except ApiError as exc:
+            snapshot.notes.append(f"模型列表获取失败：{exc}")
+            return
+
+        data = payload.get("data")
+        if not isinstance(data, list):
+            snapshot.notes.append("模型列表响应缺少 data 字段")
+            return
+
+        for entry in data:
+            if not isinstance(entry, dict) or not entry.get("id"):
+                continue
+            model_id = str(entry["id"])
+            snapshot.models.append(
+                ModelItem(
+                    id=model_id,
+                    name=str(entry.get("name") or model_id),
+                    context_window=_to_int(entry.get("context_window")),
+                    max_output_tokens=_to_int(entry.get("max_output_tokens")),
+                    input_modalities=_to_str_list(entry.get("input_modalities")),
+                    output_modalities=_to_str_list(entry.get("output_modalities")),
+                )
+            )
 
     def _error(self, account: Account, started: datetime, message: str) -> Snapshot:
         return Snapshot(
@@ -131,3 +153,14 @@ class DeepseekProvider(Provider):
             fetched_at=now_iso(),
             latency_ms=int((datetime.now() - started).total_seconds() * 1000),
         )
+
+
+def _to_int(value: object) -> int | None:
+    number = to_float(value)
+    return int(number) if number is not None else None
+
+
+def _to_str_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value if isinstance(item, str)]

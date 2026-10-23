@@ -184,7 +184,7 @@ PLATFORM_SPECS: dict[str, PlatformSpec] = {
             ModeSpec(
                 key="payg",
                 label="按量付费",
-                description="账户余额（总余额 / 赠金 / 充值）。",
+                description="账户余额（总余额 / 赠金 / 充值）与当前可用模型列表。",
                 fields=(
                     CredentialField(
                         name="api_key",
@@ -195,10 +195,16 @@ PLATFORM_SPECS: dict[str, PlatformSpec] = {
                         help="DeepSeek 开放平台 API Key。",
                     ),
                 ),
-                docs=("https://api-docs.deepseek.com/zh-cn/api/get-user-balance",),
+                docs=(
+                    "https://api-docs.deepseek.com/zh-cn/api/get-user-balance",
+                    "https://api-docs.deepseek.com/zh-cn/api/list-models",
+                ),
             ),
         ),
-        docs=("https://api-docs.deepseek.com/zh-cn/api/get-user-balance",),
+        docs=(
+            "https://api-docs.deepseek.com/zh-cn/api/get-user-balance",
+            "https://api-docs.deepseek.com/zh-cn/api/list-models",
+        ),
     ),
 }
 
