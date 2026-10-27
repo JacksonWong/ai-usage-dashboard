@@ -1,0 +1,42 @@
+{
+  "Message": "Successful!",
+  "Code": "Success",
+  "Success": true,
+  "Data": {
+    "TotalCount": 3,
+    "PageNum": 1,
+    "PageSize": 100,
+    "InstanceList": [
+      {
+        "Status": "Normal",
+        "SubscriptionType": "Subscription",
+        "OwnerId": 1316893680921757,
+        "InstanceID": "sfm_tokenplansolo_public_cn-test0001",
+        "ProductCode": "sfm",
+        "ProductType": "sfm_tokenplansolo_public_cn",
+        "Region": "cn-beijing",
+        "EndTime": "2026-12-20T16:00:00Z",
+        "CreateTime": "2026-09-20T09:47:32Z"
+      },
+      {
+        "Status": "Normal",
+        "SubscriptionType": "Subscription",
+        "OwnerId": 1316893680921757,
+        "InstanceID": "sfm_tokenplanharness_dp_cn-test0002",
+        "ProductCode": "sfm",
+        "ProductType": "sfm_tokenplanharness_dp_cn",
+        "EndTime": "2026-11-21T16:00:00Z",
+        "CreateTime": "2026-10-20T16:00:00Z"
+      },
+      {
+        "Status": "Normal",
+        "SubscriptionType": "Subscription",
+        "OwnerId": 1316893680921757,
+        "InstanceID": "oss-bag-not-bailian",
+        "ProductCode": "oss",
+        "ProductType": "ossbag",
+        "EndTime": "2027-01-01T16:00:00Z"
+      }
+    ]
+  }
+}

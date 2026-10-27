@@ -42,6 +42,9 @@ def _error_message(response: httpx.Response) -> str:
         return text[:300] or f"HTTP {response.status_code}"
 
     if isinstance(payload, dict):
+        denied = payload.get("AccessDeniedDetail")
+        if isinstance(denied, dict) and denied.get("AuthAction"):
+            return f"无权限：缺少 {denied['AuthAction']} 授权（NoPermission）"
         for key in ("Message", "message", "status_msg", "Message_", "Code", "code"):
             value = payload.get(key)
             if value:

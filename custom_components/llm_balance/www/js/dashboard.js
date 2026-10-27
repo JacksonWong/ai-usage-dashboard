@@ -133,6 +133,26 @@ function modelsNode(models) {
   return section;
 }
 
+function subscriptionsNode(subscriptions) {
+  const total = (subscriptions || []).reduce((sum, item) => sum + (item.count || 0), 0);
+  const section = text("div", "section");
+  section.appendChild(text("div", "section__title", `生效中的订阅（${total}）`));
+  const list = text("div", "models");
+
+  for (const sub of subscriptions || []) {
+    const item = text("div", "model");
+    const head = text("div", "model__head");
+    head.appendChild(text("span", "model__name", sub.label));
+    head.appendChild(text("span", "model__id", `${sub.count} 个`));
+    item.appendChild(head);
+    if (sub.end_display) item.appendChild(text("div", "model__meta", `到期 ${sub.end_display}`));
+    list.appendChild(item);
+  }
+
+  section.appendChild(list);
+  return section;
+}
+
 async function applyFilter(accountId, options) {
   try {
     await getBackend().updateAccount(accountId, { options });
@@ -337,6 +357,8 @@ function accountCard(snapshot, platform, modeLabel) {
   if (snapshot.breakdown?.length) card.appendChild(breakdownNode(snapshot.breakdown));
 
   if (snapshot.models?.length) card.appendChild(modelsNode(snapshot.models));
+
+  if (snapshot.subscriptions?.length) card.appendChild(subscriptionsNode(snapshot.subscriptions));
 
   if (snapshot.series?.length > 1) {
     const section = text("div", "section");

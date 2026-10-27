@@ -21,6 +21,7 @@ from ..snapshot import (
     Stacked,
     StackedPart,
     StackedPoint,
+    SubscriptionItem,
 )
 from .base import Provider
 
@@ -43,6 +44,18 @@ MAAS_TYPE_LABELS = {
     "capacity_reserved": "容量预留",
 }
 SEAT_TYPE_LABELS = {"standard": "标准席位", "pro": "高级席位", "max": "尊享席位"}
+
+
+def _sfm_type_label(product_type: str) -> str:
+    if "tokenplansolo" in product_type:
+        return "Token Plan 个人版"
+    if "tokenplanharness" in product_type:
+        return "Token Plan Harness"
+    if "codingplan" in product_type:
+        return "Coding Plan"
+    if "tokenplan" in product_type:
+        return "Token Plan 团队版"
+    return product_type or "百炼订阅"
 
 
 class AliyunProvider(Provider):
@@ -432,6 +445,77 @@ class AliyunProvider(Provider):
             method="POST",
         )
 
+    async def _subscription_instances(
+        self, client: httpx.AsyncClient, account: Account
+    ) -> list[dict[str, Any]]:
+        """BSS QueryAvailableInstances：名下生效中的百炼预付费订阅实例。"""
+        instances: list[dict[str, Any]] = []
+        page = 1
+        while page <= 5:
+            payload = await self._call(
+                client,
+                account,
+                host="business.aliyuncs.com",
+                path="/",
+                action="QueryAvailableInstances",
+                version=BSS_VERSION,
+                query={
+                    "Action": "QueryAvailableInstances",
+                    "Version": BSS_VERSION,
+                    "Format": "json",
+                    "PageNum": page,
+                    "PageSize": 100,
+                    "SubscriptionType": "Subscription",
+                },
+                method="POST",
+            )
+            data = payload.get("Data") or {}
+            batch = data.get("InstanceList") or []
+            instances.extend(batch)
+            total = int(to_float(data.get("TotalCount")) or 0)
+            if page * 100 >= total or not batch:
+                break
+            page += 1
+        return [
+            item
+            for item in instances
+            if str(item.get("ProductCode")) == "sfm" and str(item.get("Status")) == "Normal"
+        ]
+
+    async def _fill_subscription_instances(
+        self,
+        client: httpx.AsyncClient,
+        account: Account,
+        snapshot: Snapshot,
+        errors: dict[str, str],
+    ) -> None:
+        """席位接口无数据时（个人版 / Harness 无席位概念），用 BSS 订阅实例兜底展示。"""
+        try:
+            instances = await self._subscription_instances(client, account)
+        except ApiError as exc:
+            errors["subscriptions"] = str(exc)
+            return
+        if not instances:
+            return
+
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for item in instances:
+            grouped.setdefault(_sfm_type_label(str(item.get("ProductType") or "")), []).append(item)
+        for label, items in grouped.items():
+            ends = [str(i.get("EndTime")) for i in items if i.get("EndTime")]
+            snapshot.subscriptions.append(
+                SubscriptionItem(
+                    label=label,
+                    count=len(items),
+                    end_display=format_timestamp(max(ends)) if ends else "",
+                )
+            )
+
+        snapshot.notes.append(
+            "个人版 / Harness 的剩余 Credits 无开放接口，仅控制台订阅页用量详情可见："
+            "https://bailian.console.aliyun.com/"
+        )
+
     # ------------------------------------------------------------ Token Plan
 
     async def _fetch_token_plan(
@@ -641,6 +725,15 @@ class AliyunProvider(Provider):
                     dimension="共享包",
                     hint=str(pkg.get("Status") or ""),
                 )
+            )
+
+        if not snapshot.metrics and not snapshot.breakdown and not snapshot.subscriptions:
+            await self._fill_subscription_instances(client, account, snapshot, errors)
+
+        if not snapshot.metrics and not snapshot.breakdown and not snapshot.subscriptions:
+            snapshot.notes.append(
+                "未查询到订阅席位 / 共享包 / 生效订阅数据：请确认该账号已购买 Token Plan，"
+                "且当前 AccessKey 具备 BSS 只读权限（AliyunBSSReadOnlyAccess）"
             )
 
         for key, message in errors.items():

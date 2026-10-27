@@ -116,6 +116,7 @@ class LlmBalanceSensor(CoordinatorEntity[LlmBalanceCoordinator], SensorEntity):
             "metrics": [metric.to_dict() for metric in snapshot.metrics],
             "breakdown": [item.to_dict() for item in snapshot.breakdown],
             "models": [item.to_dict() for item in snapshot.models],
+            "subscriptions": [item.to_dict() for item in snapshot.subscriptions],
             "donut": snapshot.donut.to_dict() if snapshot.donut else None,
             "stacked": snapshot.stacked.to_dict() if snapshot.stacked else None,
             "notes": snapshot.notes,

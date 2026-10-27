@@ -195,6 +195,36 @@ async def test_aliyun_token_plan_snapshot():
     assert {"席位档位", "席位明细", "共享包"} <= dimensions
 
 
+async def test_aliyun_token_plan_bss_fallback():
+    def handler(request: httpx.Request) -> httpx.Response:
+        action = request.headers.get("x-acs-action", "")
+        if request.url.host.startswith("business."):
+            return httpx.Response(200, json=load("bss_available_instances.json"))
+        if action == "GetSubscriptionStats":
+            return httpx.Response(200, json={"Success": True})
+        if action in ("GetSubscriptionSeatDetails", "ListSubscriptionSharedPackages"):
+            return httpx.Response(
+                200, json={"Success": True, "Data": {"Items": [], "PageNo": 1, "PageSize": 50, "Total": 0}}
+            )
+        return httpx.Response(404, json={"Message": "unexpected"})
+
+    provider = AliyunProvider()
+    acct = account("aliyun", "token_plan", access_key_id="AK", access_key_secret="SK")
+    async with client_with(handler) as client:
+        snapshot = await provider.fetch(client, acct, {})
+
+    assert snapshot.status == "ok"
+    subs = {item.label: item for item in snapshot.subscriptions}
+    assert set(subs) == {"Token Plan 个人版", "Token Plan Harness"}  # oss 实例被过滤
+    assert subs["Token Plan 个人版"].count == 1
+    assert subs["Token Plan Harness"].count == 1
+    assert subs["Token Plan 个人版"].end_display  # 到期时间已格式化
+    # 兜底不再伪造进度条指标 / 生效订阅占比
+    assert not snapshot.metrics
+    assert not any(item.dimension == "生效订阅" for item in snapshot.breakdown)
+    assert any("bailian.console.aliyun.com" in note for note in snapshot.notes)
+
+
 # ------------------------------------------------------------------ MiniMax
 
 

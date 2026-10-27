@@ -49,6 +49,18 @@ class ModelItem:
 
 
 @dataclass
+class SubscriptionItem:
+    """一类生效中的预付费订阅（按产品类型聚合）。"""
+
+    label: str
+    count: int = 1
+    end_display: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class SeriesPoint:
     label: str
     value: float = 0.0
@@ -143,6 +155,7 @@ class Snapshot:
     breakdown: list[BreakdownItem] = field(default_factory=list)
     series: list[SeriesPoint] = field(default_factory=list)
     models: list[ModelItem] = field(default_factory=list)
+    subscriptions: list[SubscriptionItem] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)
     donut: Donut | None = None
@@ -163,6 +176,7 @@ class Snapshot:
             "breakdown": [b.to_dict() for b in self.breakdown],
             "series": [s.to_dict() for s in self.series],
             "models": [m.to_dict() for m in self.models],
+            "subscriptions": [s.to_dict() for s in self.subscriptions],
             "notes": self.notes,
             "raw": self.raw,
             "donut": self.donut.to_dict() if self.donut else None,
