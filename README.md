@@ -205,10 +205,4 @@ export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...
 
 | 版本 | 关键结论 |
 |---|---|
-| v1.0.0 | 首个版本：三平台（百炼按量/订阅、MiniMax M Plan、DeepSeek）多账号看板；百炼走 AccessKey + ACS3-HMAC-SHA256 签名；百炼按量付费支持账期 + 维度（模型/API Key）筛选，账单费用环形图、账单趋势堆叠柱形图 |
-| v1.0.1 | 修复传感器：带单位时 `native_value` 必须是数值（HA 会强制 `float()`），格式化文案改放 `display` 属性；MiniMax 百分比指标改为 0~100 + `%` |
-| v1.0.2 | 修复多 config entry 并发 setup 重复注册面板（加锁）；OptionsFlow 适配 2025.1+（无参构造）；选项流 `data` 会整体替换 `entry.options`，必须回传完整内容否则清空凭据 |
-| v1.0.3 | 修复面板路由：`frontend_url_path` 不能带前导斜杠（否则拼出 `//llm_balance` 被当协议相对 URL）；`httpx.AsyncClient` 构造改到 executor 线程，消除 `load_verify_locations` 阻塞告警 |
-| v1.0.4 | 修复面板 `module_url` 缺 `/js` 导致 404（加文件存在性回归测试）；选项流移除维度/账期（属面板实时筛选项）；setup 先注册面板再取数、首次失败不阻塞；刷新改 `async_refresh` 立即执行；刷新间隔由全局设置下发协调器，HA 模式前端不再另起定时器；传感器名称实时跟随备注；卸载释放 HTTP 客户端 |
-| v1.0.5 | DeepSeek 看板优化：移除「余额构成」条形图（与指标卡重复、信息量低）；接入官方 `GET /models` 展示「当前可用的模型」（模型名/id/上下文/输出上限/模态），模型接口失败仅记 note 不影响余额快照 |
-| v1.0.6 | DeepSeek「原始响应」补全：`raw` 按接口分组（`user_balance` / `models`）展示完整 JSON；403 报错透出 `AccessDeniedDetail.AuthAction` 便于定位缺权；百炼 Token Plan 个人版/Harness 无 Credits 开放接口，席位接口为空时改用 BSS `QueryAvailableInstances` 兜底，按产品类型聚合为「生效中的订阅」列表（数量 + 到期时间），不再用进度条/占比表示 |
+| v1.0.0 | 基线版本（历史版本号作废、重置于此）：三平台（百炼按量/订阅、MiniMax M Plan、DeepSeek）多账号看板，HA 集成 + 独立部署双模式；百炼走 AccessKey + ACS3-HMAC-SHA256 签名；按量付费支持账期 + 维度（模型/API Key）筛选、账单费用环形图、账单趋势堆叠柱形图；Token Plan 展示席位/共享包，个人版/Harness 无 Credits 开放接口时以 BSS `QueryAvailableInstances` 兜底为「生效中的订阅」列表；403 透出 `AccessDeniedDetail.AuthAction` 便于定位缺权；DeepSeek 展示余额与「当前可用的模型」 |
